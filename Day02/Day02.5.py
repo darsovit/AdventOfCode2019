@@ -14,6 +14,8 @@ def Intcode(code):
             (opcode,par1,par2,par3) = code[ip:ip+4]
             code[par3] = code[par1] * code[par2]
             oplength = 4
+        else:
+            assert( False )
         ip += oplength
     return code
 
@@ -28,10 +30,25 @@ def readInput():
     with open('input.txt') as f:
         line = str.rstrip( f.readline() )
         return list( map(int, line.split(',') ) )
+
+def find_noun_verb_for_output(prog, expected):
+    noun = 0
+    verb = 0
+    for noun in range(0,100):
+        for verb in range(0,100):
+            progcopy = prog.copy()
+            progcopy[1] = noun
+            progcopy[2] = verb
+            output = Intcode(progcopy)
+            if output[0] == expected:
+                return (noun,verb)
+
 test()
 
-# 337106 is too low
-input = readInput()
-input[1] = 12  # Replaced per direction in puzzle
-input[2] = 2   # Replaced per direction in puzzle
-print( Intcode( input ) )
+prog = readInput()
+
+noun = 0
+verb = 0
+output = []
+
+print( find_noun_verb_for_output( prog, 19690720 ) )
