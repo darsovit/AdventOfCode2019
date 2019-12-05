@@ -3,26 +3,30 @@
 def halt():
     print( "HALT" )
 
-def getInstr( code ):
-    if code == 1:
-        return (lambda x,y,z: z = x + y, 4)
-    elif code == 2:
-        return (lambda x,y,z: z = x * y, 4)
-    elif code == 99:
+def store( code, z, val ):
+    print( code, z, val )
+    code[z] = val
+
+def getInstr( code, instruction ):
+    if instruction == 1:
+        return (lambda x,y,z: store(code, z, x + y), 4)
+    elif instruction == 2:
+        return (lambda x,y,z: store(code, z, x * y), 4)
+    elif instruction == 99:
         return (halt, 1)
 
 def buildCommand( code, ip ):
-    (instruction,size) = getInstr( code[ip] % 100 )
+    (instruction,size) = getInstr( code, code[ip] % 100 )
     immediateLambda = lambda x: x
     addressingLambda = lambda x: code[x]
     
-    par1 = addressingLambda if int(code[ip] / 100) % 10 else immediateLambda
-    par2 = addressingLambda if int(code[ip] / 1000) % 10 else immediateLambda
-    par3 = addressingLambda if int(code[ip] / 10000) % 10 else immediateLambda
+    par1 = immediateLambda if int(code[ip] / 100) % 10   else addressingLambda
+    par2 = immediateLambda if int(code[ip] / 1000) % 10  else addressingLambda
+    par3 = immediateLambda if int(code[ip] / 10000) % 10 else addressingLambda
 
-    if size = 4:
-        return (lambda x,y,z: instruction(par1(x), par2(y), par3(y), 4)
-    else
+    if size == 4:
+        return (lambda x,y,z: instruction(par1(x), par2(y), z), 4)
+    else:
         return (instruction, size)
 
 def Intcode(code):
@@ -31,17 +35,14 @@ def Intcode(code):
     opadd  = 1
     opmul  = 2
     while ( code[ip] != ophalt ):
-        if code[ip] == opadd:
-            (opcode,par1,par2,par3) = code[ip:ip+4]
-            code[par3] = code[par1] + code[par2]
-            oplength = 4
-        elif code[ip] == opmul:
-            (opcode,par1,par2,par3) = code[ip:ip+4]
-            code[par3] = code[par1] * code[par2]
-            oplength = 4
+        (instruction,size) = buildCommand(code, ip)
+        if size == 4:
+            instruction( code[ip+1], code[ip+2], code[ip+3] )
         else:
-            assert( False )
-        ip += oplength
+            instruction()
+        ip += size
+
+    print( "Intcode result:", code )
     return code
 
 def test():
@@ -70,10 +71,10 @@ def find_noun_verb_for_output(prog, expected):
 
 test()
 
-prog = readInput()
+#prog = readInput()
 
-noun = 0
-verb = 0
-output = []
+#noun = 0
+#verb = 0
+#output = []
 
-print( find_noun_verb_for_output( prog, 19690720 ) )
+#print( find_noun_verb_for_output( prog, 19690720 ) )
