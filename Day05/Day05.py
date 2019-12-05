@@ -1,5 +1,11 @@
 #! python
 
+def readInput():
+    return 1
+
+def sendOutput(val):
+    print ("Output:", val)
+
 def halt():
     print( "HALT" )
 
@@ -9,14 +15,18 @@ def store( code, z, val ):
 
 def getInstr( code, instruction ):
     if instruction == 1:
-        return (lambda x,y,z: store(code, z, x + y), 4)
+        return (lambda x,y,z: store(code, z, x + y), 4, 2)
     elif instruction == 2:
-        return (lambda x,y,z: store(code, z, x * y), 4)
+        return (lambda x,y,z: store(code, z, x * y), 4, 2)
+    elif instruction == 3:
+        return (lambda z: store(code, z, readInput()), 2, 0)
+    elif instruction == 4:
+        return (lambda z: sendOutput( z ), 2, 1)
     elif instruction == 99:
         return (halt, 1)
 
 def buildCommand( code, ip ):
-    (instruction,size) = getInstr( code, code[ip] % 100 )
+    (instruction,size,numInput) = getInstr( code, code[ip] % 100 )
     immediateLambda = lambda x: x
     addressingLambda = lambda x: code[x]
     
@@ -24,8 +34,12 @@ def buildCommand( code, ip ):
     par2 = immediateLambda if int(code[ip] / 1000) % 10  else addressingLambda
     par3 = immediateLambda if int(code[ip] / 10000) % 10 else addressingLambda
 
-    if size == 4:
+    if size == 4 and numInput == 2:
         return (lambda x,y,z: instruction(par1(x), par2(y), z), 4)
+    elif size == 2 and numInput == 1:
+        return (lambda z: instruction(par1(z)), 2)
+    elif size == 2 and numInput == 0:
+        return (instruction, size)
     else:
         return (instruction, size)
 
@@ -38,6 +52,8 @@ def Intcode(code):
         (instruction,size) = buildCommand(code, ip)
         if size == 4:
             instruction( code[ip+1], code[ip+2], code[ip+3] )
+        elif size == 2:
+            instruction( code[ip+1] )
         else:
             instruction()
         ip += size
@@ -48,6 +64,7 @@ def Intcode(code):
 def test():
     assert( [99] == Intcode([99]) )
     assert( [2,0,0,0,99] == Intcode([1,0,0,0,99]) )
+    assert( [48,23,25,0,99] == Intcode([1101,23,25,0,99]) )
     assert( [2,3,0,6,99] == Intcode([2,3,0,3,99]) )
     assert( [2,4,4,5,99,9801] == Intcode([2,4,4,5,99,0]) )
     assert( [30,1,1,4,2,5,6,0,99] == Intcode([1,1,1,4,99,5,6,0,99]) )
@@ -71,10 +88,6 @@ def find_noun_verb_for_output(prog, expected):
 
 test()
 
-#prog = readInput()
+prog = readInput()
 
-#noun = 0
-#verb = 0
-#output = []
-
-#print( find_noun_verb_for_output( prog, 19690720 ) )
+Intcode( prog )
