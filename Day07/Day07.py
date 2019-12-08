@@ -145,11 +145,37 @@ def runAmplifierSequence( phaseSeq, prog ):
     state[5] = []
     for i in range(0,5):
         progcopy = prog.copy()
-        print( 'Input start: ', state[i] )
+        #print( 'Input start: ', state[i] )
         Intcode( progcopy, lambda : readInputFunc( state, i ), lambda x: buildInputFunc( state, i+1, x ) )
         #print( state[i+1] )
-    print( state[5] )
+    #print( state[5] )
     return state[5][0]
+
+def heapPermutation( state, a, size, n ):
+    if size == 1:
+        state['permutations'] = state['permutations'] + [ a.copy() ]
+    else:
+        for i in range( size ):
+            heapPermutation( state, a, size-1, n )
+            swapper = i
+            if size & 1:
+                swapper = 0
+            tmp = a[swapper]
+            a[swapper] = a[size-1]
+            a[size-1] = tmp
+
+def findBestAmplifierSequence( prog ):
+    state = {}
+    state['permutations'] = list()
+    heapPermutation( state, [0, 1, 2, 3, 4], 5, 5 )
+    bestPermutation = None
+    loudestOutput = None
+    for permutation in state['permutations']:
+        output = runAmplifierSequence( permutation, prog )
+        if not loudestOutput or loudestOutput < output:
+            loudestOutput = output
+            bestPermutation = permutation
+    return (loudestOutput, bestPermutation)
 
 def test2():
     (output,phaseSeq,prog) = sample1Input()
@@ -173,19 +199,29 @@ def testOutputFunc():
     outputFunc = lambda x: buildInputFunc( state, 'input', x )
     outputFunc( 245 )
     print( state )
-    
+
+def test3():
+    (output,phaseSeq,prog) = sample1Input()
+    assert( (output, phaseSeq) == findBestAmplifierSequence( prog ) )
+    (output,phaseSeq,prog) = sample2Input()
+    assert( (output, phaseSeq) == findBestAmplifierSequence( prog ) )
+    (output,phaseSeq,prog) = sample3Input()
+    assert( (output, phaseSeq) == findBestAmplifierSequence( prog ) )
+
 testInputFunc()
 testOutputFunc()
 #test()
 test2()
+test3()
 
-#print("Test complete")
-#prog = readProgInput()
+print("Test complete")
+prog = readProgInput()
 #testprog = prog.copy()
 #Intcode( testprog )
 #testprog = prog.copy()
-
-def overrideoutput(x):
-    print("Override output:", x)
+(output, phaseSeq) = findBestAmplifierSequence( prog )
+print( output, phaseSeq )
+#def overrideoutput(x):
+#    print("Override output:", x)
 
 #Intcode( testprog, lambda : 3, lambda z: print("Override output:", z) )
