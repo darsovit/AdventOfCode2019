@@ -11,12 +11,14 @@ class Intcode:
         print( "HALT" )
 
     def store( self, z, val, newIp ):
-        print( 'store before:', z, self.load(z), '->', val )
+        if self.debug == 1:
+            print( 'store before:', z, self.load(z), '->', val )
         if z < len(self.code):
             self.code[z] = val
         else:
             self.mem[z] = val
-        print( 'store after:', z, self.load(z), '==', val )
+        if self.debug == 1:
+            print( 'store after:', z, self.load(z), '==', val )
         return newIp
 
     def load( self, z ):
@@ -68,6 +70,8 @@ class Intcode:
             return lambda x: x
         elif loadMode == 2:  # Relative mode
             return lambda x: self.load( self.relativeAddr + x )
+        assert( False )
+
     def getStoreModeLambda( self, loadMode ):
         if loadMode == 0:
             return lambda x: x
@@ -81,47 +85,39 @@ class Intcode:
     def buildCommand(self):
 #    code, ip, inputFunc, outputFunc ):
         (instruction,size,numInput) = self.getInstr() # code, ip, inputFunc, outputFunc )
+        param = list()
+        addressModes = int( self.getCode() / 100 )
+        for i in range( 0, numInput ):
+            param = param + [self.getLoadModeLambda( addressModes % 10 )]
+            addressModes = int( addressModes / 10 )
+        for i in range( 0, size - 1 - numInput ):
+            param = param + [self.getStoreModeLambda( addressModes % 10 )]
+            addressModes = int( addressModes / 10 )
 
-        
-        if ( numInput > 0 )
-            par1 = self.getLoadModeLambda( int(self.getCode() / 100) % 10 )
-            par2 = self.getLoadModeLambda( int(self.getCode() / 1000) % 10 )
-            par3 = self.getLoadModeLambda( int(self.getCode() / 10000) % 10 )
-        elif ( numInput < 0 ):
-            par1 = lambda x: self.relativeAddr + x
-        #immediateLambda = lambda x: x
-        #addressingLambda = lambda x: self.load(x)
-        
-        #par1 = immediateLambda if int(self.code[self.ip] / 100) % 10   else addressingLambda
-        #par2 = immediateLambda if int(self.code[self.ip] / 1000) % 10  else addressingLambda
-        #par3 = immediateLambda if int(self.code[self.ip] / 10000) % 10 else addressingLambda
-
-        if size == 4 and numInput == 2:
-            return (lambda x,y,z: instruction(par1(x), par2(y), z), 4)
-        elif size == 3 and numInput == 2:
-            return (lambda x,y: instruction(par1(x),par2(y)), 3)
-        elif size == 2 and numInput == 1:
-            return (lambda z: instruction(par1(z)), 2)
-        elif size == 2 and numInput == -1:
-            return (lambda z: instruction(
-        elif size == 2 and numInput == 0:
-            return (instruction, size)
+        if size == 4:
+            return (lambda x,y,z: instruction(param[0](x), param[1](y), param[2](z)), 4)
+        elif size == 3:
+            return (lambda x,y: instruction(param[0](x),param[1](y)), 3)
+        elif size == 2:
+            return (lambda z: instruction(param[0](z)), 2)
         else:
             return (instruction, size)
 
     def __init__(self, code, inputFunc = readIntcodeInput, outputFunc = sendIntcodeOutput):
-        self.ip         = 0
-        self.code       = code
-        self.inputFunc  = inputFunc
-        self.outputFunc = outputFunc
+        self.ip           = 0
+        self.code         = code
+        self.inputFunc    = inputFunc
+        self.outputFunc   = outputFunc
         self.relativeAddr = 0
-        self.mem        = {}
+        self.debug        = 0
+        self.mem          = {}
     
     def __repr__(self):
         return str(self.__class__) + ": " + str(self.__dict__)
 
     def Run(self):
         ophalt = 99
+
         while ( self.getCode() != ophalt ):
             (instruction,size) = self.buildCommand() #self.code, self.ip, inputFunc, outputFunc)
             #print( ' '.join( map(str, code[ip:ip+size] ) ) )
@@ -139,6 +135,7 @@ class Intcode:
     
     def Step(self):
         ophalt = 99
+        self.debug = 1        
         if ( self.getCode() != ophalt ):
             (instruction,size) = self.buildCommand()
             if size == 4:
@@ -155,6 +152,7 @@ class Intcode:
                 newip = instruction()
             self.ip = newip
             print("DEBUG (IP:{},RelAddr:{})".format(self.ip, self.relativeAddr) )
+        self.debug = 0
 
 def readProgInput( file ):
     with open( file ) as f:
