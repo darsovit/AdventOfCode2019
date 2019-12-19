@@ -132,8 +132,8 @@ def test2Input():
  (-1, 0, 0),
  (0, -4, -1),
  (0, -2, -5)}
-
 '''
+
 def readInput():
     with open('input.txt') as f:
         return list(map(str.rstrip, f.readlines()))
