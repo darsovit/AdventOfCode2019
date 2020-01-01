@@ -150,24 +150,70 @@ class MapOutput:
             return False
         self.CalculateOxygenFill()
         return True
+
+
+
 class RobotIO:
     def __init__(self):
         self.state = {}
-        print('Calibrate the RobotIO by hitting enter:', end='')
+        print('Calibrate the RobotIO by pressing up:')
+        self.north = click.getchar()
+        print('Calibrate the RobotIO by pressing down:')
+        self.south = click.getchar()
+        print('Calibrate the RobotIO by pressing left:')
+        self.west = click.getchar()
+        print('Calibrate the RobotIO by pressing right:')
+        self.east = click.getchar()
+        
+        print('Calibrate the RobotIO by hitting enter:', end='', flush=True)
         self.done  = click.getchar()
-        print(self.done)
+        print('')
+        print('Calibrate the RobotIO by hitting backspace:', end='', flush=True)
+        self.backspace = click.getchar()
+        print('')
+        self.inputCommand = []
+        self.lastInput = ''
+        self.outputFromComp = []
+        self.currentLineOfOutput = ''
         
     def handleOutput(self, val):
-        print(chr(val), end='')
-    
+        if val == 10:
+            self.outputFromComp += [self.currentLineOfOutput]
+            self.currentLineOfOutput = ''
+            print(self.outputFromComp[-1])
+        else:
+            self.currentLineOfOutput += chr(val)
+
     def handleInput(self):
-        charval = click.getchar()
-        if charval == self.done:
-            print(self.done)
-            return 10
-        
-        print(charval, end='')
-        return ord(charval)
+        if len(self.inputCommand) == 0:
+            charval = click.getchar()
+            if self.north == charval:
+                self.inputCommand = list(map(ord, ['n','o','r','t','h']))
+                charval = self.done
+            elif self.south == charval:
+                self.inputCommand = list(map(ord, ['s','o','u','t','h']))
+                charval = self.done
+            elif self.east == charval:
+                self.inputCommand = list(map(ord, ['e','a','s','t']))
+                charval = self.done
+            elif self.west == charval:
+                self.inputCommand = list(map(ord, ['w','e','s','t']))
+                charval = self.done
+            while charval != self.done:
+                doEcho = True
+                if charval == self.backspace:
+                    if len(self.inputCommand) > 0:
+                        self.inputCommand.pop(-1)
+                    else:
+                        doEcho = False
+                else:
+                    self.inputCommand += [ord(charval)]
+                if doEcho:
+                    print(charval, end='', flush=True)
+                charval = click.getchar()
+            self.lastInput = str(map(chr, self.inputCommand))
+            self.inputCommand += [ 10 ]
+        return self.inputCommand.pop(0)
 
 
 if __name__ == '__main__':
